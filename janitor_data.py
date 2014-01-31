@@ -1,10 +1,11 @@
 #!/usr/bin/env python
-__author__ = 'Daniel Alkemic Czuba <dc@danielczuba.pl>'
-
+#-*- coding:utf-8 -*-
 import sys
 import sqlite3
 from daemon.collect import MemoryCollect
 from data import config
+
+__author__ = 'Daniel Alkemic Czuba <dc@danielczuba.pl>'
 
 
 def main(argv):

@@ -1,6 +1,8 @@
+#-*- coding:utf-8 -*-
+import os
+
 __author__ = 'Daniel Alkemic Czuba <dc@danielczuba.pl>'
 
-import os
 
 PID_FILE = '/tmp/janitor.pid'
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))

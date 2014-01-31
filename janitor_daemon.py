@@ -1,9 +1,10 @@
 #!/usr/bin/env python
-__author__ = 'Daniel Alkemic Czuba <dc@danielczuba.pl>'
-
+#-*- coding:utf-8 -*-
 import sys
 from daemon import JanitorDaemon
 from data import config
+
+__author__ = 'Daniel Alkemic Czuba <dc@danielczuba.pl>'
 
 
 if __name__ == '__main__':

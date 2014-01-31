@@ -1,6 +1,8 @@
-__author__ = 'alkemic'
-
+#-*- coding:utf-8 -*-
+import re
 import sqlite3
+
+__author__ = 'Daniel Alkemic Czuba <dc@danielczuba.pl>'
 
 
 class BaseCollect(object):
@@ -27,7 +29,9 @@ class BaseCollect(object):
         This method is called before collection loop, to check if this collector has it's tables, files, etc created or
         installed. If return False, then method self.install() will be called
         """
-        return True
+        sql = 'SELECT name FROM sqlite_master WHERE type=\'table\' AND name=\'%s\';' % self.table_name
+        result = self.cursor.execute(sql).fetchone()
+        return result and result.__len__() > 0
 
     def install(self):
         """
@@ -48,6 +52,37 @@ class BaseCollect(object):
         pass
 
 
+class CPUCollect(BaseCollect):
+    table_name = 'cpu_usage'
+
+    column_description = (
+        ('la1', 'Load avg. from last 1 min.'),
+        ('la5', 'Load avg. from last 5 min.'),
+        ('la15', 'Load avg. from last 15 min.'),
+    )
+
+    def install(self):
+        sql = 'create table %s (' \
+              '  id INTEGER PRIMARY KEY AUTOINCREMENT, ' \
+              '  physical_total INTEGER, ' \
+              '  physical_used INTEGER, ' \
+              '  physical_buffers INTEGER, ' \
+              '  physical_cache INTEGER, ' \
+              '  swap_total INTEGER, ' \
+              '  swap_used INTEGER, ' \
+              '  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP' \
+              ');' % self.table_name
+        self.cursor.execute(sql)
+        self.connection.commit()
+
+    def get_load_avg(self):
+        with open('/proc/meminfo', 'r') as fh:
+            la = fh.read()
+            la_dict = re.match('(?P<la1>\d+\.\d+) (?P<la5>\d+\.\d+) (?P<la15>\d+\.\d+) .*', la).groupdict()
+
+        return la_dict['la 1'], la_dict['la5'], la_dict['la15']
+
+
 class MemoryCollect(BaseCollect):
     table_name = 'memory_usage'
 
@@ -59,11 +94,6 @@ class MemoryCollect(BaseCollect):
         ('swap_total', 'Total available SWAP'),
         ('swap_used', 'Used SWAP')
     )
-
-    def is_installed(self):
-        sql = 'SELECT name FROM sqlite_master WHERE type=\'table\' AND name=\'%s\';' % self.table_name
-        result = self.cursor.execute(sql).fetchone()
-        return result and result.__len__() > 0
 
     def install(self):
         sql = 'create table %s (' \
