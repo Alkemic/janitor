@@ -18,7 +18,7 @@ class JanitorDaemon(Daemon):
         self.connection = sqlite3.connect(config.SQLITE_PATH)
 
         # adding collectors to list
-        for collector, collector_kwargs in config.collectors:
+        for collector, collector_kwargs in config.COLLECTORS:
             self.collectors.append(collector(self.connection, **collector_kwargs))
 
     def _signal_hup(self, signum, frame):

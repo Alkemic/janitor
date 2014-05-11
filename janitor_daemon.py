@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #-*- coding:utf-8 -*-
 import sys
-from daemon import JanitorDaemon
+from daemon.janitor import JanitorDaemon
 from data import config
 
 __author__ = 'Daniel Alkemic Czuba <dc@danielczuba.pl>'
