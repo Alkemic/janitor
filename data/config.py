@@ -17,7 +17,7 @@ COLLECTORS = (
     (MemoryCollect, {}),
     (CPULoadCollect, {}),
     (LoadAverageCollect, {}),
-    (NetworkCollect, {'interface': 'wlan0'}),
+    (NetworkCollect, {'interface': 'eth0'}),
 )
 
 JANITOR_DATA_BIND_TO = ('', 9999)
