@@ -1,13 +1,10 @@
 #!/usr/bin/env python
-#-*- coding:utf-8 -*-
+# -*- coding:utf-8 -*-
 
 import sqlite3
 import SocketServer
 
-from data import config
-
-__author__ = 'Daniel Alkemic Czuba <dc@danielczuba.pl>'
-
+import config
 
 page_contents = """HTTP/1.1 200 OK
 Content-Type:text/html
@@ -51,14 +48,20 @@ class ChartHandler(SocketServer.BaseRequestHandler):
         self.request.sendall(page_contents % (chart_jses, chart_divs))
 
 
-if __name__ == '__main__':
+def run():
     SocketServer.TCPServer.allow_reuse_address = True
 
     ChartHandler.connection = sqlite3.connect(config.SQLITE_PATH)
 
-    for collector, collector_kwargs in config.COLLECTORS:
-        ChartHandler.collectors.append(collector(ChartHandler.connection, **collector_kwargs))
+    for name, collector in config.COLLECTORS.items():
+        collector, collector_kwargs = collector
+        ChartHandler.collectors.append(
+            collector(ChartHandler.connection, **collector_kwargs))
 
     server = SocketServer.TCPServer(config.JANITOR_DATA_BIND_TO, ChartHandler)
 
     server.serve_forever()
+
+
+if __name__ == '__main__':
+    run()
