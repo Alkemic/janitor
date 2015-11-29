@@ -1,23 +1,45 @@
-#!/usr/bin/env python
-#-*- coding:utf-8 -*-
-"""
-http://www.jejik.com/articles/2007/02/a_simple_unix_linux_daemon_in_python/
-"""
-
+# -*- coding:utf-8 -*-
+from datetime import datetime, date
 import sys
 import os
 import time
 import atexit
+import json
+import re
 from signal import SIGTERM
 
 
-class Daemon:
+class __JSONDateEncoder__(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return '**new Date(%i,%i,%i,%i,%i,%i)' % (
+                obj.year, obj.month-1, obj.day,
+                obj.hour, obj.minute, obj.second,
+            )
+        if isinstance(obj, date):
+            return '**new Date(%i,%i,%i)' % (obj.year, obj.month-1, obj.day)
+        return json.JSONEncoder.default(self, obj)
+
+
+class Singleton(type):
+    _instances = {}
+
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(Singleton, cls). \
+                __call__(*args, **kwargs)
+        return cls._instances[cls]
+
+
+class Daemon(object):
     """
     A generic daemon class.
 
     Usage: subclass the Daemon class and override the run() method
+    http://www.jejik.com/articles/2007/02/a_simple_unix_linux_daemon_in_python/
     """
-    def __init__(self, pidfile, stdin='/dev/null', stdout='/dev/null', stderr='/dev/null', working_dir='/'):
+    def __init__(self, pidfile, stdin='/dev/null', stdout='/dev/null',
+                 stderr='/dev/null', working_dir='/'):
         self.stdin = stdin
         self.stdout = stdout
         self.stderr = stderr
@@ -36,7 +58,9 @@ class Daemon:
                 # exit first parent
                 sys.exit(0)
         except OSError, e:
-            sys.stderr.write("fork #1 failed: %d (%s)\n" % (e.errno, e.strerror))
+            sys.stderr.write("fork #1 failed: %d (%s)\n" % (
+                e.errno, e.strerror,
+            ))
             sys.exit(1)
 
         # decouple from parent environment
@@ -51,10 +75,12 @@ class Daemon:
                 # exit from second parent
                 sys.exit(0)
         except OSError, e:
-            sys.stderr.write("fork #2 failed: %d (%s)\n" % (e.errno, e.strerror))
+            sys.stderr.write("fork #2 failed: %d (%s)\n" % (
+                e.errno, e.strerror,
+            ))
             sys.exit(1)
 
-            # redirect standard file descriptors
+        # redirect standard file descriptors
         sys.stdout.flush()
         sys.stderr.flush()
         si = file(self.stdin, 'r')
@@ -65,11 +91,11 @@ class Daemon:
         os.dup2(se.fileno(), sys.stderr.fileno())
 
         # write pidfile
-        atexit.register(self.delpid)
+        atexit.register(self.del_pid)
         pid = str(os.getpid())
         file(self.pidfile, 'w+').write("%s\n" % pid)
 
-    def delpid(self):
+    def del_pid(self):
         os.remove(self.pidfile)
 
     def get_pid(self):
@@ -88,7 +114,7 @@ class Daemon:
         """
         # Check for a pidfile to see if the daemon already runs
         try:
-            pf = file(self.pidfile,'r')
+            pf = file(self.pidfile, 'r')
             pid = int(pf.read().strip())
             pf.close()
         except IOError:
@@ -97,7 +123,7 @@ class Daemon:
         if pid:
             message = "pidfile %s already exist. Daemon already running?\n"
             sys.stderr.write(message % self.pidfile)
-            sys.exit(1)
+            # sys.exit(1)
 
         # Start the daemon
         self.daemonize()
@@ -138,6 +164,20 @@ class Daemon:
 
     def run(self):
         """
-        You should override this method when you subclass Daemon. It will be called after the process has been
+        You should override this method when you subclass Daemon.
+        It will be called after the process has been
         daemonized by start() or restart().
         """
+
+
+def json_dumps(obj):
+    """ A (simple)json wrapper that can wrap up python datetime and date
+    objects into Javascript date objects.
+    @param obj: the python object (possibly containing dates or datetimes) for
+        (simple)json to serialize into JSON
+
+    @returns: JSON version of the passed object
+    """
+    __jsdateregexp__ = re.compile(r'"\*\*(new Date\([0-9,]+\))"')
+    out = __jsdateregexp__.sub(r'\1', json.dumps(obj, cls=__JSONDateEncoder__))
+    return unicode(out).decode('utf-8')
